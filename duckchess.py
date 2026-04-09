@@ -23,19 +23,6 @@ def evaluate_move(variant, fen, move_uci, engine):
     engine.quit()
     return score
 
-
-# print(dir(pyffish))
-# exit()
-
-for variant in pyffish.variants():
-    if variant == "duck":
-        print(f"FOUND: {variant}")
-
-# print(start)
-# print(type(start)) # --> str
-
-# print(len(pyffish.legal_moves("duck", start, []))) --> 640
-# print(len(pyffish.legal_moves("chess", pyffish.start_fen("chess"), []))) --> 20
 def run_duckchess(engine):
     variant = "duck"
     curr_fen = pyffish.start_fen(variant)
@@ -59,17 +46,22 @@ def run_duckchess(engine):
             chosen_move = moves[1]
         else:
             chosen_move = moves[0]
-        
+
+        # scores = {}
+        # for move in moves:
+        #     fen_after_move = pyffish.get_fen(variant, curr_fen, [move])
+        #     scores[move] = evaluate_move(variant, fen_after_move, None, engine)
+
         # show current board state as fen
         curr_fen = pyffish.get_fen(variant, curr_fen, [chosen_move])
         print(f"Move {num_moves}: {chosen_move}")
         print(f"Board: {curr_fen}")
-        # score = evaluate_move(variant, curr_fen, None)
+        # score = evaluate_move(variant, curr_fen, None, engine)
         num_moves += 1
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Not enough arguments.")
+        print("Not enough arguments. Usage: python3 duckchess.py [path-to-executable]")
         exit()
 
     engine_binary = sys.argv[1]
