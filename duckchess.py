@@ -5,8 +5,12 @@ import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import sys
 import random
+import argparse
 
-def evaluate_fen_worker(variant, fen_to_evaluate, engine_path):
+DEFAULT_WORKER_COUNT = 7
+DEFAULT_SEARCH_DEPTH = 4
+
+def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
     """
     The Worker: Now only takes a FEN. 
     It evaluates the position 'as is' and returns the score for the side to move.
@@ -36,7 +40,7 @@ def evaluate_fen_worker(variant, fen_to_evaluate, engine_path):
 
         # Send the FEN only. No 'moves' list needed.
         send(f"position fen {fen_to_evaluate}")
-        send("go depth 4")
+        send(f"go depth {depth}")
 
         score = 0
         while True:
@@ -58,16 +62,18 @@ def evaluate_fen_worker(variant, fen_to_evaluate, engine_path):
         if process:
             process.terminate()
 
-def run_duckchess(engine_path):
+def run_duckchess(engine_path, num_workers, depth):
     variant = "duck"
     current_fen = pyffish.start_fen(variant)
     random_plies = 20
+    # random.seed(42)
     
     # 1. Play random moves locally
     print(f"--- Playing {random_plies} random moves ---")
     for i in range(random_plies):
         moves = pyffish.legal_moves(variant, current_fen, [])
-        if not moves: break
+        if not moves: 
+            break
         current_fen = pyffish.get_fen(variant, current_fen, [random.choice(moves)])
 
     print(f"Starting Search from FEN: {current_fen}\n")
@@ -84,10 +90,10 @@ def run_duckchess(engine_path):
 
     # 3. Parallel Evaluation of FENs
     results = []
-    with ProcessPoolExecutor(max_workers=7) as executor:
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
         # Pass only the variant, the specific FEN, and the engine path
         future_to_move = {
-            executor.submit(evaluate_fen_worker, variant, fen, engine_path): move 
+            executor.submit(evaluate_fen_worker, variant, fen, engine_path, depth): move 
             for move, fen in tasks
         }
 
@@ -108,8 +114,24 @@ def run_duckchess(engine_path):
         print(f"Move: {move:<15} | Score: {score}")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python script.py [path-to-large-branching-exe]")
-        sys.exit(1)
 
-    run_duckchess(sys.argv[1])
+    parser = argparse.ArgumentParser(
+        prog="duckchess",
+        description="This program evaluates the FEN of a duckchess board after random moves played.",
+    )
+    
+    parser.add_argument("engine_path")
+    parser.add_argument("-n", "--num_workers", type=int, default=DEFAULT_WORKER_COUNT)
+    parser.add_argument("-d", "--depth", type=int, default=DEFAULT_SEARCH_DEPTH)
+    parser.add_argument("-r", "--rand_seed", type=int, nargs="?", const=None, default=42)
+    args = parser.parse_args()
+
+    # print(args.engine_path, args.num_workers, args.depth, args.rand_seed)
+
+    if args.rand_seed is None:
+        rand_seed = random.randint(0, 1000000)
+    else:
+        rand_seed = args.rand_seed
+
+    random.seed(rand_seed)
+    run_duckchess(args.engine_path, args.num_workers, args.depth)

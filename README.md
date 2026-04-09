@@ -6,3 +6,6 @@ source chess_venv/bin/activate
 
 ### install dependencies
 pip install -r requirements.txt
+
+### update dependencies
+pip freeze > requirements.txt
