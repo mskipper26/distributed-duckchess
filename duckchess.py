@@ -1,15 +1,17 @@
 import pyffish
 import chess
 import chess.engine
+import sys
 
-def evaluate_move(variant, fen, move_uci):
+def evaluate_move(variant, fen, move_uci, engine):
     # Start the Fairy Stockfish binary
     # Ensure you have the 'fairy-stockfish' executable in your path
-    engine = chess.engine.SimpleEngine.popen_uci("./fairy-stockfish")
+    engine = chess.engine.SimpleEngine.popen_uci(engine)
     
     # Configure for Duck Chess
-    engine.configure({"UCI_Variant": variant})
-    
+    # engine.configure({"UCI_Variant": variant})
+    engine.protocol.send_line("setoption name UCI_Variant value duck")
+
     board = chess.Board(fen, chess960=False) # Use variant-specific board if available
     # Or simply:
     # engine.send_command(f"position fen {fen} moves {move_uci}")
@@ -29,38 +31,47 @@ for variant in pyffish.variants():
     if variant == "duck":
         print(f"FOUND: {variant}")
 
-start = pyffish.start_fen("duck")
 # print(start)
 # print(type(start)) # --> str
 
 # print(len(pyffish.legal_moves("duck", start, []))) --> 640
 # print(len(pyffish.legal_moves("chess", pyffish.start_fen("chess"), []))) --> 20
+def run_duckchess(engine):
+    variant = "duck"
+    curr_fen = pyffish.start_fen(variant)
+    print(curr_fen)
+    num_moves = 0
+    while True:
+        moves = pyffish.legal_moves(variant, curr_fen, [])
+        
+        if not moves:
+            print("Game Over: No more legal moves.")
+            result = pyffish.game_result(variant, curr_fen, [])
+            print(f"Result: {result}")
+            break
 
-variant = "duck"
-curr_fen = pyffish.start_fen(variant)
-num_moves = 0
-while True:
-    moves = pyffish.legal_moves(variant, curr_fen, [])
-    
-    if not moves:
-        print("Game Over: No more legal moves.")
-        result = pyffish.game_result(variant, curr_fen, [])
-        print(f"Result: {result}")
-        break
+        # take the first move every time, to test
+        if len(moves) > 3:
+            chosen_move = moves[3]
+        elif len(moves) > 2:
+            chosen_move = moves[2]
+        elif len(moves) > 1:
+            chosen_move = moves[1]
+        else:
+            chosen_move = moves[0]
+        
+        # show current board state as fen
+        curr_fen = pyffish.get_fen(variant, curr_fen, [chosen_move])
+        print(f"Move {num_moves}: {chosen_move}")
+        print(f"Board: {curr_fen}")
+        # score = evaluate_move(variant, curr_fen, None)
+        num_moves += 1
 
-    # take the first move every time, to test
-    if len(moves) > 3:
-        chosen_move = moves[3]
-    elif len(moves) > 2:
-        chosen_move = moves[2]
-    elif len(moves) > 1:
-        chosen_move = moves[1]
-    else:
-        chosen_move = moves[0]
-    
-    # show current board state as fen
-    curr_fen = pyffish.get_fen(variant, curr_fen, [chosen_move])
-    print(f"Move {num_moves}: {chosen_move}")
-    print(f"Board: {curr_fen}")
-    score = evaluate_move(variant, curr_fen, None)
-    num_moves += 1
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Not enough arguments.")
+        exit()
+
+    engine_binary = sys.argv[1]
+
+    run_duckchess(engine_binary)
