@@ -1,69 +1,107 @@
 import pyffish
-import chess
-import chess.engine
+from tqdm import tqdm
+import re
+import subprocess
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import sys
 
-def evaluate_move(variant, fen, move_uci, engine):
-    # Start the Fairy Stockfish binary
-    # Ensure you have the 'fairy-stockfish' executable in your path
-    engine = chess.engine.SimpleEngine.popen_uci(engine)
-    
-    # Configure for Duck Chess
-    # engine.configure({"UCI_Variant": variant})
-    engine.protocol.send_line("setoption name UCI_Variant value duck")
+def evaluate_position(variant, fen, engine_path, move_name):
+    """The engine subprocess worker"""
+    # Start the process
+    # We use engine_path as the variable to avoid shadowing the process object
+    process = subprocess.Popen(
+        engine_path,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1  # Line buffered
+    )
 
-    board = chess.Board(fen, chess960=False) # Use variant-specific board if available
-    # Or simply:
-    # engine.send_command(f"position fen {fen} moves {move_uci}")
-    
-    # Get evaluation
-    info = engine.analyse(board, chess.engine.Limit(depth=8))
-    score = info["score"].relative.score(mate_score=10000)
-    
-    engine.quit()
-    return score
+    def send(cmd):
+        process.stdin.write(f"{cmd}\n")
+        process.stdin.flush() # CRITICAL: Ensure engine sees the command
 
-def run_duckchess(engine):
-    variant = "duck"
-    curr_fen = pyffish.start_fen(variant)
-    print(curr_fen)
-    num_moves = 0
+    # 1. UCI Setup
+    send("uci")
+    send("setoption name UCI_Variant value duck")
+    send("isready")
+    
     while True:
-        moves = pyffish.legal_moves(variant, curr_fen, [])
-        
-        if not moves:
-            print("Game Over: No more legal moves.")
-            result = pyffish.game_result(variant, curr_fen, [])
-            print(f"Result: {result}")
+        line = process.stdout.readline()
+        if "readyok" in line.strip():
             break
 
-        # take the first move every time, to test
-        if len(moves) > 3:
-            chosen_move = moves[3]
-        elif len(moves) > 2:
-            chosen_move = moves[2]
-        elif len(moves) > 1:
-            chosen_move = moves[1]
-        else:
-            chosen_move = moves[0]
+    # 2. Evaluation
+    send(f"position fen {fen}")
+    send("go depth 4")
 
-        # scores = {}
-        # for move in moves:
-        #     fen_after_move = pyffish.get_fen(variant, curr_fen, [move])
-        #     scores[move] = evaluate_move(variant, fen_after_move, None, engine)
+    score = 0
+    while True:
+        line = process.stdout.readline()
+        if not line: break # Process died
+        
+        if "score cp" in line:
+            match = re.search(r'score cp (-?\d+)', line)
+            if match:
+                score = int(match.group(1))
+        
+        if "bestmove" in line:
+            break
 
-        # show current board state as fen
-        curr_fen = pyffish.get_fen(variant, curr_fen, [chosen_move])
-        print(f"Move {num_moves}: {chosen_move}")
-        print(f"Board: {curr_fen}")
-        # score = evaluate_move(variant, curr_fen, None, engine)
-        num_moves += 1
+    # 3. Clean up
+    send("quit")
+    try:
+        process.wait(timeout=1)
+    except:
+        process.terminate()
+        
+    # Fixed: Returning the score (move_name is handled by the future dictionary in main)
+    return score
+
+def run_duckchess(engine_path):
+    print("Generating moves via pyffish...")
+    variant = "duck"
+    start_fen = pyffish.start_fen(variant)
+    moves = pyffish.legal_moves(variant, start_fen, [])
+    
+    # Pre-calculate FENs
+    tasks = []
+    for move in moves:
+        new_fen = pyffish.get_fen(variant, start_fen, [move])
+        tasks.append((move, new_fen))
+    
+    print(f"Evaluating {len(tasks)} positions...")
+
+    results = []
+    # Using 7 workers as requested
+    with ProcessPoolExecutor(max_workers=7) as executor:
+        # Pass move_name into the function so it doesn't get lost
+        future_to_move = {
+            executor.submit(evaluate_position, variant, fen, engine_path, move): move 
+            for move, fen in tasks
+        }
+
+        for f in tqdm(as_completed(future_to_move), total=len(tasks), desc="Searching"):
+            move_name = future_to_move[f]
+            try:
+                score = f.result()
+                # Note: Score is from Black's perspective because White just moved.
+                # We multiply by -1 to show the score for White.
+                results.append((move_name, -score))
+            except Exception as e:
+                print(f"\nError evaluating {move_name}: {e}")
+
+    results.sort(key=lambda x: x[1], reverse=True)
+    
+    print("\n--- Top 10 Moves for White ---")
+    for move, score in results[:10]:
+        print(f"Move: {move:<15} | Score: {score}")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Not enough arguments. Usage: python3 duckchess.py [path-to-executable]")
-        exit()
+        print("Usage: python test3.py [path-to-executable]")
+        sys.exit(1)
 
     engine_binary = sys.argv[1]
-
     run_duckchess(engine_binary)
