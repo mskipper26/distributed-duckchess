@@ -3,10 +3,150 @@ import chess
 import chess.svg
 from PyQt6.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
 from PyQt6.QtGui import QPixmap, QColor, QPainter
-from PyQt6.QtCore import Qt, QSize, QRectF
+from PyQt6.QtCore import Qt, QSize, QRectF, QThread, pyqtSignal
 from PyQt6.QtSvg import QSvgRenderer
 import os
+
+import pyffish
+from tqdm import tqdm
+import re
+import subprocess
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+import traceback
+import multiprocessing
+
 os.environ["QT_QPA_PLATFORM"] = "xcb"
+
+def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
+    """
+    The Worker: Now only takes a FEN. 
+    It evaluates the position 'as is' and returns the score for the side to move.
+    """
+    process = None
+    try:
+        process = subprocess.Popen(
+            engine_path,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+            bufsize=1
+        )
+
+        def send(cmd):
+            process.stdin.write(f"{cmd}\n")
+            process.stdin.flush()
+
+        send("uci")
+        send(f"setoption name UCI_Variant value {variant}")
+        send("isready")
+        
+        while True:
+            line = process.stdout.readline()
+            if "readyok" in line:
+                break
+
+        # Send the FEN only. No 'moves' list needed.
+        send(f"position fen {fen_to_evaluate}")
+        send(f"go depth {depth}")
+
+        score = 0
+        while True:
+            line = process.stdout.readline()
+            if not line: break 
+            if "score cp" in line:
+                match = re.search(r'score cp (-?\d+)', line)
+                if match:
+                    score = int(match.group(1))
+            if "bestmove" in line:
+                break
+
+        send("quit")
+        return score
+    except Exception as e:
+        print(f"Engine Error: {repr(e)}")
+        return 0
+    finally:
+        if process:
+            process.terminate()
+
+def run_duckchess(engine_path, num_workers, depth, startpos=None):
+    variant = "duck"
+    current_fen = pyffish.start_fen(variant) if startpos is None else startpos
+
+    print(f"Starting Search from FEN: {current_fen}\n")
+    
+    # 2. Pre-calculate all resulting FENs locally
+    possible_moves = pyffish.legal_moves(variant, current_fen, [])
+    
+    # Create a list of (MoveName, ResultingFEN)
+    # This keeps the 'Worker' from having to do any rule-processing
+    tasks = []
+    for move in possible_moves:
+        resulting_fen = pyffish.get_fen(variant, current_fen, [move])
+        tasks.append((move, resulting_fen))
+
+    # 3. Parallel Evaluation of FENs
+    results = []
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        # Pass only the variant, the specific FEN, and the engine path
+        future_to_move = {
+            executor.submit(evaluate_fen_worker, variant, fen, engine_path, depth): move 
+            for move, fen in tasks
+        }
+
+        for f in tqdm(as_completed(future_to_move), total=len(tasks), desc="Evaluating FENs"):
+            move_name = future_to_move[f]
+            score = f.result()
+            
+            # Since the engine evaluates the state AFTER the move, 
+            # the score is from the opponent's perspective. 
+            # We negate it so higher = better for the current mover.
+            results.append((move_name, -score))
+
+    # 4. Results
+    if not results:
+        print("Engine found no legal moves! (Checkmate/Stalemate or Invalid FEN)")
+        return ""
+        
+    results.sort(key=lambda x: x[1], reverse=True)
+
+    best_move_raw = results[0][0]
+
+    # Convert Fairy-Stockfish format (e.g., "d7d5,d5g5") to GUI format (e.g., "d7d5@g5")
+    if ',' in best_move_raw:
+        parts = best_move_raw.split(',')
+        piece_move = parts[0]
+        duck_square = parts[1][-2:] # The last two characters are the duck's destination
+        best_move_formatted = f"{piece_move}@{duck_square}"
+    else:
+        # Fallback if there's no comma for some reason
+        best_move_formatted = best_move_raw
+
+    return best_move_formatted
+
+class EngineWorker(QThread):
+    move_calculated = pyqtSignal(str)
+
+    def __init__(self, engine_path, fen, num_workers=7, depth=4):
+        super().__init__()
+        self.engine_path = engine_path
+        self.fen = fen
+        self.num_workers = num_workers
+        self.depth = depth
+
+    def run(self):
+        try:
+            best_move = run_duckchess(
+                engine_path=self.engine_path, 
+                num_workers=self.num_workers, 
+                depth=self.depth, 
+                startpos=self.fen
+            )
+            self.move_calculated.emit(best_move)
+        except Exception as e:
+            traceback.print_exc()
+            self.move_calculated.emit("")
 
 class DuckGUI(QMainWindow):
     def __init__(self):
@@ -18,7 +158,8 @@ class DuckGUI(QMainWindow):
         self.move_piece_part = None 
         self.duck_square = None
 
-        self.is_computer = {chess.WHITE: False, chess.BLACK: False}
+        self.is_computer = {chess.WHITE: False, chess.BLACK: True}
+        self.engine_path = "./fairy-stockfish-all_x86-64"
         self.flip_board = False
         self.game_over = False
 
@@ -156,7 +297,16 @@ class DuckGUI(QMainWindow):
         if self.game_over:
             print("The game is already over!")
             return
-        if self.is_computer[self.board.turn]:
+
+        # Determine who is actually interacting right now. 
+        # If move_piece_part has text, the person who just moved is placing the duck.
+        if self.move_piece_part is not None:
+            active_color = not self.board.turn
+        else:
+            active_color = self.board.turn
+
+        # Check if the currently active color belongs to the computer
+        if self.is_computer[active_color]:
             print("Wait for computer...")
             return
 
@@ -190,6 +340,7 @@ class DuckGUI(QMainWindow):
                     print(f"FOWLED! {('Black' if self.board.turn == chess.WHITE else 'White')} wins!")
                     self.game_over = True
 
+            # Trigger engine ONLY after the duck is placed
             if self.move_piece_part is None and self.is_computer[self.board.turn]:
                 self.trigger_engine_eval()
 
@@ -250,12 +401,63 @@ class DuckGUI(QMainWindow):
                 
             return True
 
+    def apply_engine_move(self, engine_move_str):
+        if not engine_move_str:
+            print("Error: Engine returned no move.")
+            return
+
+        print(f"Computer plays: {engine_move_str}")
+
+        # Split the piece move from the duck placement (e.g., "e7e5@d4")
+        parts = engine_move_str.split('@')
+        piece_move_str = parts[0]
+        new_duck_str = parts[1] if len(parts) > 1 else None
+
+        # 1. Apply the piece move
+        move = chess.Move.from_uci(piece_move_str)
+        self.board.push(move)
+
+        # 2. Apply the duck move
+        if new_duck_str:
+            self.duck_square = chess.parse_square(new_duck_str)
+
+        # 3. Check for game-ending conditions
+        if not self.check_kings_alive():
+            self.render_all()
+            return
+            
+        if self.is_fowled():
+            print(f"FOWLED! {('Black' if self.board.turn == chess.WHITE else 'White')} wins!")
+            self.game_over = True
+
+        # 4. Update the visual board
+        self.render_all()
+
     def trigger_engine_eval(self):
-        # Placeholder for engine
-        print("Move logic finished. Ready for AI evaluation.")
+        print("Computer is thinking...")
+        
+        # 1. Build the Duck Chess FEN
+        # Standard FEN: [Pieces] [Turn] [Castling] [EP] [Halfmove] [Fullmove]
+        fen_parts = self.board.fen().split(' ')
+        
+        # Get the duck square (use "-" if no duck is placed yet)
+        duck_str = chess.square_name(self.duck_square) if self.duck_square is not None else "-"
+        
+        # Insert the duck square right before the Halfmove clock (Index 4)
+        # Result: [Pieces] [Turn] [Castling] [EP] [Duck] [Halfmove] [Fullmove]
+        fen_parts.insert(4, duck_str)
+        startpos_fen = " ".join(fen_parts)
+
+        print(f"Sending FEN to engine: {startpos_fen}")
+
+        # 2. Start the engine in the background
+        self.engine_thread = EngineWorker(self.engine_path, startpos_fen)
+        self.engine_thread.move_calculated.connect(self.apply_engine_move)
+        self.engine_thread.start()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    multiprocessing.set_start_method('spawn', force=True)
     gui = DuckGUI()
     gui.show()
     sys.exit(app.exec())

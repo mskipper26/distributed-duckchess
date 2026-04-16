@@ -1,2 +1,3 @@
 chess_venv/
 *:Zone.Identifier
+__pycache__
