@@ -1,2 +1,7 @@
+chess==1.11.2
 pyffish==0.0.88
+PyQt6==6.11.0
+PyQt6-Qt6==6.11.0
+PyQt6_sip==13.11.1
+python-chess==1.999
 tqdm==4.67.3
