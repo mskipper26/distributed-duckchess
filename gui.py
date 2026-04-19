@@ -58,6 +58,16 @@ def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
                 match = re.search(r'score cp (-?\d+)', line)
                 if match:
                     score = int(match.group(1))
+
+            elif "score mate" in line:
+                match = re.search(r'score mate (-?\d+)', line)
+                if match:
+                    mate_in = int(match.group(1))
+                    if mate_in > 0:
+                        score = 100000 - mate_in
+                    elif mate_in < 0:
+                        score = -100000 - mate_in
+
             if "bestmove" in line:
                 break
 
@@ -154,6 +164,7 @@ class DuckGUI(QMainWindow):
         super().__init__()
         self.setWindowTitle("ND CRC Duck Chess")
         self.board = chess.Board()
+        self.pyffish_fen = pyffish.start_fen("duck")
         self.selected_square = None
         self.move_piece_part = None 
         self.duck_square = None
@@ -324,16 +335,22 @@ class DuckGUI(QMainWindow):
                             
                     self.board.push(move)
                     self.move_piece_part = chess.square_name(self.selected_square) + chess.square_name(square)
+                    self.piece_dest = chess.square_name(square)
 
                     if not self.check_kings_alive():
                         self.render_all()
                         return
+                    print("Move the duck!")
                 
                 self.selected_square = None
+
         else:
             if self.board.piece_at(square) is None and square != self.duck_square:
                 self.duck_square = square
-                print(f"Move complete: {self.move_piece_part}@{chess.square_name(square)}")
+                move = f"{self.move_piece_part}@{chess.square_name(square)}"
+                print(f"Move complete: {move}")
+                pyffish_move = f"{self.move_piece_part},{self.piece_dest}{chess.square_name(square)}"
+                self.pyffish_fen = pyffish.get_fen("duck", self.pyffish_fen, [pyffish_move])
                 self.move_piece_part = None
 
                 if self.is_fowled():
@@ -415,11 +432,15 @@ class DuckGUI(QMainWindow):
 
         # 1. Apply the piece move
         move = chess.Move.from_uci(piece_move_str)
+        piece_dest = chess.square_name(move.to_square)
         self.board.push(move)
 
         # 2. Apply the duck move
         if new_duck_str:
             self.duck_square = chess.parse_square(new_duck_str)
+
+        pyffish_move = f"{piece_move_str},{piece_dest}{chess.square_name(self.duck_square)}"
+        self.pyffish_fen = pyffish.get_fen("duck", self.pyffish_fen, [pyffish_move])
 
         # 3. Check for game-ending conditions
         if not self.check_kings_alive():
@@ -436,22 +457,10 @@ class DuckGUI(QMainWindow):
     def trigger_engine_eval(self):
         print("Computer is thinking...")
         
-        # 1. Build the Duck Chess FEN
-        # Standard FEN: [Pieces] [Turn] [Castling] [EP] [Halfmove] [Fullmove]
-        fen_parts = self.board.fen().split(' ')
-        
-        # Get the duck square (use "-" if no duck is placed yet)
-        duck_str = chess.square_name(self.duck_square) if self.duck_square is not None else "-"
-        
-        # Insert the duck square right before the Halfmove clock (Index 4)
-        # Result: [Pieces] [Turn] [Castling] [EP] [Duck] [Halfmove] [Fullmove]
-        fen_parts.insert(4, duck_str)
-        startpos_fen = " ".join(fen_parts)
+        print(f"Sending FEN to workers: {self.pyffish_fen}")
 
-        print(f"Sending FEN to engine: {startpos_fen}")
-
-        # 2. Start the engine in the background
-        self.engine_thread = EngineWorker(self.engine_path, startpos_fen)
+        # Fire off the worker
+        self.engine_thread = EngineWorker(self.engine_path, self.pyffish_fen)
         self.engine_thread.move_calculated.connect(self.apply_engine_move)
         self.engine_thread.start()
 
