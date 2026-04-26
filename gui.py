@@ -1,162 +1,15 @@
-import sys
 import chess
 import chess.svg
-from PyQt6.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
-from PyQt6.QtGui import QPixmap, QColor, QPainter
-from PyQt6.QtCore import Qt, QSize, QRectF, QThread, pyqtSignal
-from PyQt6.QtSvg import QSvgRenderer
-import os
-
 import pyffish
-from tqdm import tqdm
-import re
-import subprocess
-from concurrent.futures import ProcessPoolExecutor, as_completed
+import os
+from PyQt6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
+from PyQt6.QtGui import QPixmap, QPainter
+from PyQt6.QtCore import Qt, QRectF
+from PyQt6.QtSvg import QSvgRenderer
 
-import traceback
-import multiprocessing
+from rules import is_duck_legal, is_fowled, check_kings_alive
 
 os.environ["QT_QPA_PLATFORM"] = "xcb"
-
-def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
-    """
-    The Worker: Now only takes a FEN. 
-    It evaluates the position 'as is' and returns the score for the side to move.
-    """
-    process = None
-    try:
-        process = subprocess.Popen(
-            engine_path,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            text=True,
-            bufsize=1
-        )
-
-        def send(cmd):
-            process.stdin.write(f"{cmd}\n")
-            process.stdin.flush()
-
-        send("uci")
-        send(f"setoption name UCI_Variant value {variant}")
-        send("isready")
-        
-        while True:
-            line = process.stdout.readline()
-            if "readyok" in line:
-                break
-
-        # Send the FEN only. No 'moves' list needed.
-        send(f"position fen {fen_to_evaluate}")
-        send(f"go depth {depth}")
-
-        score = 0
-        while True:
-            line = process.stdout.readline()
-            if not line: break 
-            if "score cp" in line:
-                match = re.search(r'score cp (-?\d+)', line)
-                if match:
-                    score = int(match.group(1))
-
-            elif "score mate" in line:
-                match = re.search(r'score mate (-?\d+)', line)
-                if match:
-                    mate_in = int(match.group(1))
-                    if mate_in > 0:
-                        score = 100000 - mate_in
-                    elif mate_in < 0:
-                        score = -100000 - mate_in
-
-            if "bestmove" in line:
-                break
-
-        send("quit")
-        return score
-    except Exception as e:
-        print(f"Engine Error: {repr(e)}")
-        return 0
-    finally:
-        if process:
-            process.terminate()
-
-def run_duckchess(engine_path, num_workers, depth, startpos=None):
-    variant = "duck"
-    current_fen = pyffish.start_fen(variant) if startpos is None else startpos
-
-    print(f"Starting Search from FEN: {current_fen}\n")
-    
-    # 2. Pre-calculate all resulting FENs locally
-    possible_moves = pyffish.legal_moves(variant, current_fen, [])
-    
-    # Create a list of (MoveName, ResultingFEN)
-    # This keeps the 'Worker' from having to do any rule-processing
-    tasks = []
-    for move in possible_moves:
-        resulting_fen = pyffish.get_fen(variant, current_fen, [move])
-        tasks.append((move, resulting_fen))
-
-    # 3. Parallel Evaluation of FENs
-    results = []
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        # Pass only the variant, the specific FEN, and the engine path
-        future_to_move = {
-            executor.submit(evaluate_fen_worker, variant, fen, engine_path, depth): move 
-            for move, fen in tasks
-        }
-
-        for f in tqdm(as_completed(future_to_move), total=len(tasks), desc="Evaluating FENs"):
-            move_name = future_to_move[f]
-            score = f.result()
-            
-            # Since the engine evaluates the state AFTER the move, 
-            # the score is from the opponent's perspective. 
-            # We negate it so higher = better for the current mover.
-            results.append((move_name, -score))
-
-    # 4. Results
-    if not results:
-        print("Engine found no legal moves! (Checkmate/Stalemate or Invalid FEN)")
-        return ""
-        
-    results.sort(key=lambda x: x[1], reverse=True)
-
-    best_move_raw = results[0][0]
-
-    # Convert Fairy-Stockfish format (e.g., "d7d5,d5g5") to GUI format (e.g., "d7d5@g5")
-    if ',' in best_move_raw:
-        parts = best_move_raw.split(',')
-        piece_move = parts[0]
-        duck_square = parts[1][-2:] # The last two characters are the duck's destination
-        best_move_formatted = f"{piece_move}@{duck_square}"
-    else:
-        # Fallback if there's no comma for some reason
-        best_move_formatted = best_move_raw
-
-    return best_move_formatted
-
-class EngineWorker(QThread):
-    move_calculated = pyqtSignal(str)
-
-    def __init__(self, engine_path, fen, num_workers=7, depth=4):
-        super().__init__()
-        self.engine_path = engine_path
-        self.fen = fen
-        self.num_workers = num_workers
-        self.depth = depth
-
-    def run(self):
-        try:
-            best_move = run_duckchess(
-                engine_path=self.engine_path, 
-                num_workers=self.num_workers, 
-                depth=self.depth, 
-                startpos=self.fen
-            )
-            self.move_calculated.emit(best_move)
-        except Exception as e:
-            traceback.print_exc()
-            self.move_calculated.emit("")
 
 class DuckGUI(QMainWindow):
     def __init__(self):
@@ -214,8 +67,9 @@ class DuckGUI(QMainWindow):
         if self.move_piece_part is None:
             if self.selected_square is not None:
                 for move in self.board.generate_pseudo_legal_moves():
-                    if move.from_square == self.selected_square and self.is_duck_legal(move):
-                        legal_targets.append(move.to_square)
+                    if move.from_square == self.selected_square:
+                        if is_duck_legal(self.board, move, self.duck_square):
+                            legal_targets.append(move.to_square)
 
         fill_colors = {}
         if self.selected_square:
@@ -327,7 +181,7 @@ class DuckGUI(QMainWindow):
                     self.selected_square = square
             else:
                 move = chess.Move(self.selected_square, square)
-                if self.is_duck_legal(move):
+                if is_duck_legal(self.board, move, self.duck_square):
 
                     if self.board.piece_at(self.selected_square).piece_type == chess.PAWN:
                         if chess.square_rank(square) in [0, 7]:
@@ -337,7 +191,8 @@ class DuckGUI(QMainWindow):
                     self.move_piece_part = chess.square_name(self.selected_square) + chess.square_name(square)
                     self.piece_dest = chess.square_name(square)
 
-                    if not self.check_kings_alive():
+                    if not check_kings_alive(self.board):
+                        self.game_over = True
                         self.render_all()
                         return
                     print("Move the duck!")
@@ -353,7 +208,7 @@ class DuckGUI(QMainWindow):
                 self.pyffish_fen = pyffish.get_fen("duck", self.pyffish_fen, [pyffish_move])
                 self.move_piece_part = None
 
-                if self.is_fowled():
+                if is_fowled(self.board, self.duck_square):
                     print(f"FOWLED! {('Black' if self.board.turn == chess.WHITE else 'White')} wins!")
                     self.game_over = True
 
@@ -362,61 +217,6 @@ class DuckGUI(QMainWindow):
                 self.trigger_engine_eval()
 
         self.render_all()
-
-    def is_duck_legal(self, move):
-        """Checks if a move is blocked by the duck."""
-        if move not in self.board.generate_pseudo_legal_moves():
-            return False
-            
-        if move.to_square == self.duck_square:
-            return False
-    
-        piece = self.board.piece_at(move.from_square)
-        if piece and piece.piece_type != chess.KNIGHT:
-            path = self.get_path(move.from_square, move.to_square)
-            if self.duck_square in path:
-                return False
-                
-        return True
-
-    def get_path(self, start, end):
-        """Returns a list of squares between start and end (exclusive)."""
-        diff_file = chess.square_file(end) - chess.square_file(start)
-        diff_rank = chess.square_rank(end) - chess.square_rank(start)
-        
-        step_f = 0 if diff_file == 0 else (1 if diff_file > 0 else -1)
-        step_r = 0 if diff_rank == 0 else (1 if diff_rank > 0 else -1)
-        
-        path = []
-        curr_f, curr_r = chess.square_file(start) + step_f, chess.square_rank(start) + step_r
-        while (curr_f, curr_r) != (chess.square_file(end), chess.square_rank(end)):
-            path.append(chess.square(curr_f, curr_r))
-            curr_f += step_f
-            curr_r += step_r
-        return path
-
-    def is_fowled(self):
-        """Checks if the player to move has absolutely no legal moves."""
-        for move in self.board.generate_pseudo_legal_moves():
-            if self.is_duck_legal(move):
-                return False
-        return True
-
-    def check_kings_alive(self):
-            """Returns True if both kings are on the board, False otherwise."""
-            white_king = self.board.king(chess.WHITE)
-            black_king = self.board.king(chess.BLACK)
-            
-            if white_king is None:
-                print("BLACK WINS! White King captured.")
-                self.game_over = True
-                return False
-            if black_king is None:
-                print("WHITE WINS! Black King captured.")
-                self.game_over = True
-                return False
-                
-            return True
 
     def apply_engine_move(self, engine_move_str):
         if not engine_move_str:
@@ -443,11 +243,12 @@ class DuckGUI(QMainWindow):
         self.pyffish_fen = pyffish.get_fen("duck", self.pyffish_fen, [pyffish_move])
 
         # 3. Check for game-ending conditions
-        if not self.check_kings_alive():
+        if not check_kings_alive(self.board):
+            self.game_over = True
             self.render_all()
             return
             
-        if self.is_fowled():
+        if is_fowled(self.board, self.duck_square):
             print(f"FOWLED! {('Black' if self.board.turn == chess.WHITE else 'White')} wins!")
             self.game_over = True
 
@@ -455,6 +256,7 @@ class DuckGUI(QMainWindow):
         self.render_all()
 
     def trigger_engine_eval(self):
+        from main import EngineWorker
         print("Computer is thinking...")
         
         print(f"Sending FEN to workers: {self.pyffish_fen}")
@@ -463,10 +265,3 @@ class DuckGUI(QMainWindow):
         self.engine_thread = EngineWorker(self.engine_path, self.pyffish_fen)
         self.engine_thread.move_calculated.connect(self.apply_engine_move)
         self.engine_thread.start()
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    multiprocessing.set_start_method('spawn', force=True)
-    gui = DuckGUI()
-    gui.show()
-    sys.exit(app.exec())
