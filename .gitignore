@@ -2,3 +2,4 @@ chess_venv/
 *:Zone.Identifier
 __pycache__
 miniforge.sh
+vine-run-info/
