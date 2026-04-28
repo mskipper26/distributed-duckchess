@@ -1,0 +1,120 @@
+2026/04/28 01:29:55.04 vine_manager[323314]vine: TaskVine version 7.16.5 FINAL (released 2026-03-19 17:12:38 +0000)
+2026/04/28 01:29:55.04 vine_manager[323314]vine: Built by conda@fee13c031c43 on 2026-03-19 17:12:38 +0000
+2026/04/28 01:29:55.04 vine_manager[323314]vine: System: Linux fee13c031c43 6.14.0-1017-azure #17~24.04.1-Ubuntu SMP Mon Dec  1 20:10:50 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+2026/04/28 01:29:55.04 vine_manager[323314]vine: Configuration: --debug --prefix /home/mskipper/miniforge3/envs/duckchess --with-base-dir /home/mskipper/miniforge3/envs/duckchess --with-readline-path no --with-perl-path no --without-system-parrot --without-system-prune --without-system-umbrella --without-system-weaver
+2026/04/28 01:29:55.04 vine_manager[323314]vine: manager timezone at startup: local_time=2026-04-28 01:29:55 tz_abbr=UTC tz_offset=+0000
+2026/04/28 01:29:55.04 vine_manager[323314]tcp: listening on port 9123
+2026/04/28 01:29:55.04 vine_manager[323314]vine: manager start
+2026/04/28 01:29:55.04 vine_manager[323314]vine: Using default disconnect slow workers factor for 'default'.
+2026/04/28 01:29:55.04 vine_manager[323314]vine: workers connections -- known: 0, connecting: 0
+2026/04/28 01:29:55.04 vine_manager[323314]vine: log enabled and is being written to performance
+2026/04/28 01:29:55.04 vine_manager[323314]vine: transactions log enabled and is being written to transactions
+2026/04/28 01:29:55.04 vine_manager[323314]vine: graph log enabled and is being written to taskgraph
+2026/04/28 01:29:55.04 vine_manager[323314]vine: workers connections -- known: 0, connecting: 0
+2026/04/28 01:29:55.04 vine_manager[323314]vine: Manager is listening on port 9123.
+2026/04/28 01:29:55.04 vine_manager[323314]vine: Task 1 state change: INITIAL (0) to READY (1)
+2026/04/28 01:29:55.04 vine_manager[323314]vine: Task 2 state change: INITIAL (0) to READY (1)
+2026/04/28 01:29:55.04 vine_manager[323314]vine: Task 3 state change: INITIAL (0) to READY (1)
+2026/04/28 01:29:55.04 vine_manager[323314]debug: warning: using plain-text when communicating with workers.
+2026/04/28 01:29:55.04 vine_manager[323314]debug: warning: use encryption with a key and cert when creating the manager.
+2026/04/28 01:30:42.91 vine_manager[323314]tcp: accepted connection from 127.0.0.1 port 38210
+2026/04/28 01:30:42.91 vine_manager[323314]vine: worker 127.0.0.1:38210 connected
+2026/04/28 01:30:42.91 vine_manager[323314]vine: rx from unknown (127.0.0.1:38210): taskvine 12 skipper-pc Linux x86_64 7.16.5
+2026/04/28 01:30:42.91 vine_manager[323314]vine: 1 workers are connected in total now
+2026/04/28 01:30:42.91 vine_manager[323314]vine: skipper-pc (127.0.0.1:38210) running CCTools version 7.16.5 on Linux (operating system) with architecture x86_64 is ready
+2026/04/28 01:30:42.91 vine_manager[323314]vine: rx from skipper-pc (127.0.0.1:38210): info worker-id worker-c916f3af76b4f0dd07c84c72af572008
+2026/04/28 01:30:42.91 vine_manager[323314]vine: rx from skipper-pc (127.0.0.1:38210): transfer-port 1024
+2026/04/28 01:30:42.91 vine_manager[323314]vine: rx from skipper-pc (127.0.0.1:38210): info worker-end-time 0
+2026/04/28 01:30:42.91 vine_manager[323314]vine: rx from skipper-pc (127.0.0.1:38210): alive
+2026/04/28 01:30:42.91 vine_manager[323314]vine: rx from skipper-pc (127.0.0.1:38210): resources
+2026/04/28 01:30:42.91 vine_manager[323314]vine: cores 8
+2026/04/28 01:30:42.91 vine_manager[323314]vine: memory 61106
+2026/04/28 01:30:42.91 vine_manager[323314]vine: disk 300462
+2026/04/28 01:30:42.91 vine_manager[323314]vine: gpus 0
+2026/04/28 01:30:42.91 vine_manager[323314]vine: workers 1
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tag 0
+2026/04/28 01:30:42.91 vine_manager[323314]vine: end
+2026/04/28 01:30:42.91 vine_manager[323314]vine: skipper-pc (127.0.0.1:38210) will get warandpeace.txt from url https://www.gutenberg.org/cache/epub/2600/pg2600.txt
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): puturl https://www.gutenberg.org/cache/epub/2600/pg2600.txt url-rnd-rwogtvbgumdexog 1 0 0755 DDAC8044-9AC3-41EE-912D-60DF1D01F79B
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): task 1
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): cmd 32
+2026/04/28 01:30:42.91 vine_manager[323314]vine: grep needle warandpeace.txt | wc
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): category default
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): cores 1.000
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): gpus 0
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): memory 7638
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): disk 28168
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): infile url-rnd-rwogtvbgumdexog warandpeace.txt 0
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): end
+2026/04/28 01:30:42.91 vine_manager[323314]vine: skipper-pc (127.0.0.1:38210) busy on 'grep needle warandpeace.txt | wc'
+2026/04/28 01:30:42.91 vine_manager[323314]vine: Task 1 state change: READY (1) to RUNNING (2)
+2026/04/28 01:30:42.91 vine_manager[323314]vine: workers connections -- known: 1, connecting: 0
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): task 2
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): cmd 31
+2026/04/28 01:30:42.91 vine_manager[323314]vine: grep house warandpeace.txt | wc
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): category default
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): cores 1.000
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): gpus 0
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): memory 7638
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): disk 28168
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): infile url-rnd-rwogtvbgumdexog warandpeace.txt 0
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): end
+2026/04/28 01:30:42.91 vine_manager[323314]vine: skipper-pc (127.0.0.1:38210) busy on 'grep house warandpeace.txt | wc'
+2026/04/28 01:30:42.91 vine_manager[323314]vine: Task 2 state change: READY (1) to RUNNING (2)
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): task 3
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): cmd 31
+2026/04/28 01:30:42.91 vine_manager[323314]vine: grep water warandpeace.txt | wc
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): category default
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): cores 1.000
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): gpus 0
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): memory 7638
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): disk 28168
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): infile url-rnd-rwogtvbgumdexog warandpeace.txt 0
+2026/04/28 01:30:42.91 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): end
+2026/04/28 01:30:42.91 vine_manager[323314]vine: skipper-pc (127.0.0.1:38210) busy on 'grep water warandpeace.txt | wc'
+2026/04/28 01:30:42.91 vine_manager[323314]vine: Task 3 state change: READY (1) to RUNNING (2)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: rx from skipper-pc (127.0.0.1:38210): cache-update url-rnd-rwogtvbgumdexog 2 1 3359613 33204 562728 1777339842918999 DDAC8044-9AC3-41EE-912D-60DF1D01F79B
+2026/04/28 01:30:43.48 vine_manager[323314]vine: rx from skipper-pc (127.0.0.1:38210): info tasks_running 3
+2026/04/28 01:30:43.48 vine_manager[323314]vine: rx from skipper-pc (127.0.0.1:38210): complete 0 0 24 24 1777339843482174 1777339843485718 0 1
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Receiving stdout of task 1 (size: 24 bytes) from 127.0.0.1:38210 (skipper-pc) ...
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Retrieved 24 bytes from skipper-pc (127.0.0.1:38210)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Task 1 state change: RUNNING (2) to WAITING_RETRIEVAL (3)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): kill 1
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Task 1 state change: WAITING_RETRIEVAL (3) to RETRIEVED (4)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: skipper-pc (127.0.0.1:38210) done in 0.57s total tasks 1 average 0.00s
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Task 1 state change: RETRIEVED (4) to DONE (5)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: workers connections -- known: 1, connecting: 0
+2026/04/28 01:30:43.48 vine_manager[323314]vine: rx from skipper-pc (127.0.0.1:38210): complete 0 0 24 24 1777339843482681 1777339843487557 0 3
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Receiving stdout of task 3 (size: 24 bytes) from 127.0.0.1:38210 (skipper-pc) ...
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Retrieved 24 bytes from skipper-pc (127.0.0.1:38210)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Task 3 state change: RUNNING (2) to WAITING_RETRIEVAL (3)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): kill 3
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Task 3 state change: WAITING_RETRIEVAL (3) to RETRIEVED (4)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: skipper-pc (127.0.0.1:38210) done in 0.57s total tasks 2 average 0.00s
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Task 3 state change: RETRIEVED (4) to DONE (5)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: workers connections -- known: 1, connecting: 0
+2026/04/28 01:30:43.48 vine_manager[323314]vine: rx from skipper-pc (127.0.0.1:38210): complete 0 0 24 24 1777339843482436 1777339843487984 0 2
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Receiving stdout of task 2 (size: 24 bytes) from 127.0.0.1:38210 (skipper-pc) ...
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Retrieved 24 bytes from skipper-pc (127.0.0.1:38210)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Task 2 state change: RUNNING (2) to WAITING_RETRIEVAL (3)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): kill 2
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Task 2 state change: WAITING_RETRIEVAL (3) to RETRIEVED (4)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: skipper-pc (127.0.0.1:38210) done in 0.57s total tasks 3 average 0.00s
+2026/04/28 01:30:43.48 vine_manager[323314]vine: Task 2 state change: RETRIEVED (4) to DONE (5)
+2026/04/28 01:30:43.48 vine_manager[323314]vine: workers connections -- known: 1, connecting: 0
+2026/04/28 01:30:43.49 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): release
+2026/04/28 01:30:43.49 vine_manager[323314]vine: worker skipper-pc (127.0.0.1:38210) removed
+2026/04/28 01:30:43.49 vine_manager[323314]vine: Removing instances of worker from transfer table
+2026/04/28 01:30:43.49 vine_manager[323314]vine: tx to skipper-pc (127.0.0.1:38210): unlink url-rnd-rwogtvbgumdexog
+2026/04/28 01:30:43.49 vine_manager[323314]tcp: disconnected from 127.0.0.1 port 38210
+2026/04/28 01:30:43.49 vine_manager[323314]vine: 0 workers connected in total now
+2026/04/28 01:30:43.49 vine_manager[323314]vine: workers connections -- known: 0, connecting: 0
+2026/04/28 01:30:43.49 vine_manager[323314]vine: deleting /home/mskipper/distributed-duckchess/vine-run-info/2026-04-28T012955/staging
+2026/04/28 01:30:43.49 vine_manager[323314]vine:   object  created   ref_added  deleted
+2026/04/28 01:30:43.49 vine_manager[323314]vine: -----------------------------------
+2026/04/28 01:30:43.49 vine_manager[323314]vine:    tasks        3        3        6 ok
+2026/04/28 01:30:43.49 vine_manager[323314]vine:   mounts        3        0        3 ok
+2026/04/28 01:30:43.49 vine_manager[323314]vine:    files        1        3        4 ok
+2026/04/28 01:30:43.49 vine_manager[323314]vine: replicas        1        0        1 ok
+2026/04/28 01:30:43.49 vine_manager[323314]vine:  workers        1        0        1 ok
+2026/04/28 01:30:43.49 vine_manager[323314]vine: manager end

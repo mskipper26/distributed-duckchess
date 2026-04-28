@@ -1,0 +1,8 @@
+# taskvine taskgraph version 2
+# TASK taskid "program" INPUTS fileid1 fileid fileid3 ... OUTPUTS fileid4 fileid5 ...
+# FILE fileid "source" size
+FILE url-rnd-rwogtvbgumdexog "https://www.gutenberg.org/cache/epub/2600/pg2600.txt" 0
+TASK T1 "grep" INPUTS url-rnd-rwogtvbgumdexog OUTPUTS 
+TASK T3 "grep" INPUTS url-rnd-rwogtvbgumdexog OUTPUTS 
+TASK T2 "grep" INPUTS url-rnd-rwogtvbgumdexog OUTPUTS 
+# end

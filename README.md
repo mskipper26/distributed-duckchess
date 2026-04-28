@@ -4,6 +4,7 @@ conda activate duckchess
 
 # Install PyQt via Conda (handles system-level graphics drivers better)
 conda install pyqt -c conda-forge -y
+conda install -c conda-forge ndcctools
 
 # Install the rest via your requirements file
 pip install -r requirements.txt

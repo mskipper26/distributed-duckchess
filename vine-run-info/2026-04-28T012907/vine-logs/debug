@@ -1,0 +1,29 @@
+2026/04/28 01:29:07.42 vine_manager[321987]vine: TaskVine version 7.16.5 FINAL (released 2026-03-19 17:12:38 +0000)
+2026/04/28 01:29:07.42 vine_manager[321987]vine: Built by conda@fee13c031c43 on 2026-03-19 17:12:38 +0000
+2026/04/28 01:29:07.43 vine_manager[321987]vine: System: Linux fee13c031c43 6.14.0-1017-azure #17~24.04.1-Ubuntu SMP Mon Dec  1 20:10:50 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+2026/04/28 01:29:07.43 vine_manager[321987]vine: Configuration: --debug --prefix /home/mskipper/miniforge3/envs/duckchess --with-base-dir /home/mskipper/miniforge3/envs/duckchess --with-readline-path no --with-perl-path no --without-system-parrot --without-system-prune --without-system-umbrella --without-system-weaver
+2026/04/28 01:29:07.43 vine_manager[321987]vine: manager timezone at startup: local_time=2026-04-28 01:29:07 tz_abbr=UTC tz_offset=+0000
+2026/04/28 01:29:07.43 vine_manager[321987]tcp: listening on port 9123
+2026/04/28 01:29:07.43 vine_manager[321987]vine: manager start
+2026/04/28 01:29:07.43 vine_manager[321987]vine: Using default disconnect slow workers factor for 'default'.
+2026/04/28 01:29:07.43 vine_manager[321987]vine: workers connections -- known: 0, connecting: 0
+2026/04/28 01:29:07.43 vine_manager[321987]vine: log enabled and is being written to performance
+2026/04/28 01:29:07.43 vine_manager[321987]vine: transactions log enabled and is being written to transactions
+2026/04/28 01:29:07.43 vine_manager[321987]vine: graph log enabled and is being written to taskgraph
+2026/04/28 01:29:07.43 vine_manager[321987]vine: workers connections -- known: 0, connecting: 0
+2026/04/28 01:29:07.43 vine_manager[321987]vine: Manager is listening on port 9123.
+2026/04/28 01:29:07.43 vine_manager[321987]vine: Task 1 state change: INITIAL (0) to READY (1)
+2026/04/28 01:29:07.43 vine_manager[321987]vine: Task 2 state change: INITIAL (0) to READY (1)
+2026/04/28 01:29:07.43 vine_manager[321987]vine: Task 3 state change: INITIAL (0) to READY (1)
+2026/04/28 01:29:07.43 vine_manager[321987]debug: warning: using plain-text when communicating with workers.
+2026/04/28 01:29:07.43 vine_manager[321987]debug: warning: use encryption with a key and cert when creating the manager.
+2026/04/28 01:29:17.87 vine_manager[321987]vine: workers connections -- known: 0, connecting: 0
+2026/04/28 01:29:17.87 vine_manager[321987]vine: deleting /home/mskipper/distributed-duckchess/vine-run-info/2026-04-28T012907/staging
+2026/04/28 01:29:17.87 vine_manager[321987]vine:   object  created   ref_added  deleted
+2026/04/28 01:29:17.87 vine_manager[321987]vine: -----------------------------------
+2026/04/28 01:29:17.87 vine_manager[321987]vine:    tasks        3        3        3 leaked 3
+2026/04/28 01:29:17.87 vine_manager[321987]vine:   mounts        3        0        0 leaked 3
+2026/04/28 01:29:17.87 vine_manager[321987]vine:    files        1        3        1 leaked 3
+2026/04/28 01:29:17.87 vine_manager[321987]vine: replicas        0        0        0 ok
+2026/04/28 01:29:17.87 vine_manager[321987]vine:  workers        0        0        0 ok
+2026/04/28 01:29:17.87 vine_manager[321987]vine: manager end
