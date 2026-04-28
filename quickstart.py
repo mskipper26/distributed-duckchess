@@ -69,7 +69,7 @@ def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
 m = vine.Manager([9123, 9129])
 print(f"Listening on port {m.port}")
 
-f = m.declare_file("./fairy-stockfish-all_x86-64")
+f = m.declare_file("./stockfish")
 
 variant = "duck"
 current_fen = pyffish.start_fen(variant)
@@ -80,8 +80,8 @@ print("submitting tasks...")
 n = len(moves)
 for move in moves:
     resulting_fen = pyffish.get_fen(variant, current_fen, [move])
-    task = vine.PythonTask(evaluate_fen_worker, variant, resulting_fen, "./fairy-stockfish-all_x86-64", 4)
-    task.add_input(f, "./fairy-stockfish-all_x86-64")
+    task = vine.PythonTask(evaluate_fen_worker, variant, resulting_fen, "./stockfish", 4)
+    task.add_input(f, "./stockfish")
     task.set_cores(1)
     m.submit(task)
 
