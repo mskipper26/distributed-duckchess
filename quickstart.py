@@ -2,6 +2,7 @@
 
 import ndcctools.taskvine as vine
 import pyffish
+import time
 
 def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
     """
@@ -66,8 +67,15 @@ def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
             process.terminate()
 
 # Create a new manager
-m = vine.Manager([9123, 9129])
+m = vine.Manager(name=f"duckchess-{int(time.time())}")
+m.enable_monitoring()
 print(f"Listening on port {m.port}")
+
+workers = vine.Factory("condor", m)
+workers.max_workers = 10
+workers.cores = 1
+workers.memory = 1000
+workers.disk = 1000
 
 f = m.declare_file("./stockfish")
 
@@ -76,20 +84,21 @@ current_fen = pyffish.start_fen(variant)
 moves = pyffish.legal_moves(variant, current_fen, [])
 
 # Submit several tasks for execution:
-print("submitting tasks...")
-n = len(moves)
-for move in moves:
-    resulting_fen = pyffish.get_fen(variant, current_fen, [move])
-    task = vine.PythonTask(evaluate_fen_worker, variant, resulting_fen, "./stockfish", 4)
-    task.add_input(f, "./stockfish")
-    task.set_cores(1)
-    m.submit(task)
+with workers:
+    print("submitting tasks...")
+    n = len(moves)
+    for move in moves:
+        resulting_fen = pyffish.get_fen(variant, current_fen, [move])
+        task = vine.PythonTask(evaluate_fen_worker, variant, resulting_fen, "./stockfish", 4)
+        task.add_input(f, "./stockfish")
+        task.set_cores(1)
+        m.submit(task)
 
-# As they complete, display the results:
-print("waiting for tasks to complete...")
-while not m.empty():
-    task = m.wait(5)
-    if task:
-        print("task {} completed with result {}".format(task.id, task.output))
+    # As they complete, display the results:
+    print("waiting for tasks to complete...")
+    while not m.empty():
+        task = m.wait(5)
+        if task:
+            print("task {} completed with result {}".format(task.id, task.output))
 
 print("all done.")
