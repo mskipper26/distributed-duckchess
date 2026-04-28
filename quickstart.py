@@ -71,8 +71,10 @@ m = vine.Manager(name=f"duckchess-{int(time.time())}")
 m.enable_monitoring()
 print(f"Listening on port {m.port}")
 
+num_workers = 10
+
 workers = vine.Factory("condor", m)
-workers.max_workers = 10
+workers.max_workers = num_workers
 workers.cores = 1
 workers.memory = 1000
 workers.disk = 1000
@@ -82,23 +84,42 @@ f = m.declare_file("./stockfish")
 variant = "duck"
 current_fen = pyffish.start_fen(variant)
 moves = pyffish.legal_moves(variant, current_fen, [])
-
+n = len(moves)
+submit_time = time.time()
 # Submit several tasks for execution:
 with workers:
     print("submitting tasks...")
-    n = len(moves)
     for move in moves:
         resulting_fen = pyffish.get_fen(variant, current_fen, [move])
         task = vine.PythonTask(evaluate_fen_worker, variant, resulting_fen, "./stockfish", 4)
         task.add_input(f, "./stockfish")
         task.set_cores(1)
         m.submit(task)
+    
+    wait_time = time.time()
+    first_time = None
 
     # As they complete, display the results:
     print("waiting for tasks to complete...")
     while not m.empty():
         task = m.wait(5)
         if task:
-            print("task {} completed with result {}".format(task.id, task.output))
+            if first_time is None:
+                first_time = time.time()
+            # print("task {} completed with result {}".format(task.id, task.output))
+    done_time = time.time()
+    print("{} workers: {} tasks completed".format(num_workers, n))
+    
+    total = done_time - submit_time
+    rate = n / (total * 1.0)
+    print(f"\tTotal time: {total:.3f} seconds ({rate:.3f} tasks/sec)")
+
+    total = done_time - wait_time
+    rate = n / (total * 1.0)
+    print(f"\tTime excluding submission: {total:.3f} seconds ({rate:.3f} tasks/sec)")
+
+    total = done_time - first_time
+    rate = n / (total * 1.0)
+    print(f"\tTime after first result: {total:.3f} seconds ({rate:.3f} tasks/sec)")
 
 print("all done.")
