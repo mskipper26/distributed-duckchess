@@ -57,10 +57,14 @@ def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
             if "bestmove" in line:
                 break
 
+        if process.poll() is not None:
+             raise Exception(f"Engine exited unexpectedly with code {process.returncode}")
+
         send("quit")
         return score
-    except Exception as e:
-        print(f"Engine Error: {repr(e)}")
+    except Exception:
+        print("Exception")
+        traceback.print_exc(file=sys.stderr)
         return 0
     finally:
         if process:
