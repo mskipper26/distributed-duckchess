@@ -10,6 +10,8 @@ def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
     """
     import subprocess
     import re
+    import traceback
+    import sys
 
     process = None
     try:
@@ -17,6 +19,7 @@ def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
             engine_path,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
             bufsize=1
         )
@@ -48,11 +51,15 @@ def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
                     score = int(match.group(1))
             if "bestmove" in line:
                 break
+                
+        if process.poll() is not None:
+             raise Exception(f"Engine exited unexpectedly with code {process.returncode}")
 
         send("quit")
         return score
     except Exception:
         print("Exception")
+        traceback.print_exc(file=sys.stderr)
         return 0
     finally:
         if process:

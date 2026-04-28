@@ -21,3 +21,8 @@ vine_worker localhost 9123
 
 ## Submit 10 workers to HTCondor Pool
 vine_submit_workers -T condor MACHINENAME 9123 10
+ - machine name and port specify the machine to call back to
+
+# CRC machines 
+ - crcfe01.crc.nd.edu
+ - crcfe02.crc.nd.edu
