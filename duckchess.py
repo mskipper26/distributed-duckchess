@@ -6,61 +6,10 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import sys
 import random
 import argparse
+from engine import evaluate_fen_worker
 
 DEFAULT_WORKER_COUNT = 7
 DEFAULT_SEARCH_DEPTH = 4
-
-def evaluate_fen_worker(variant, fen_to_evaluate, engine_path, depth):
-    """
-    The Worker: Now only takes a FEN. 
-    It evaluates the position 'as is' and returns the score for the side to move.
-    """
-    process = None
-    try:
-        process = subprocess.Popen(
-            engine_path,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            text=True,
-            bufsize=1
-        )
-
-        def send(cmd):
-            process.stdin.write(f"{cmd}\n")
-            process.stdin.flush()
-
-        send("uci")
-        send(f"setoption name UCI_Variant value {variant}")
-        send("isready")
-        
-        while True:
-            line = process.stdout.readline()
-            if "readyok" in line:
-                break
-
-        # Send the FEN only. No 'moves' list needed.
-        send(f"position fen {fen_to_evaluate}")
-        send(f"go depth {depth}")
-
-        score = 0
-        while True:
-            line = process.stdout.readline()
-            if not line: break 
-            if "score cp" in line:
-                match = re.search(r'score cp (-?\d+)', line)
-                if match:
-                    score = int(match.group(1))
-            if "bestmove" in line:
-                break
-
-        send("quit")
-        return score
-    except Exception:
-        print("Exception")
-        return 0
-    finally:
-        if process:
-            process.terminate()
 
 def run_duckchess(engine_path, num_workers, depth):
     variant = "duck"
