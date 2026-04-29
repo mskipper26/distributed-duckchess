@@ -99,7 +99,7 @@ def distributed_best_move(variant, fen, engine_path, depth, m, f, e):
     results = []
 
     for move, fen in tasks:
-        task = vine.PythonTask(evaluate_fen_worker, variant, fen, "./stockfish", depth)
+        task = vine.PythonTask(evaluate_fen_worker, variant, fen, "./stockfish", depth-1)
         task.add_input(f, "./stockfish")
         task.add_input(e, "engine.py")
         task.set_cores(1)
