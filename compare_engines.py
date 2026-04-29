@@ -10,11 +10,11 @@ import pyffish
 from engine import evaluate_fen_worker
 
 # --- CONFIGURATION ---
-ENGINE_PATH     = "./fairy-stockfish-all_x86-64"
+ENGINE_PATH     = "./stockfish"
 VARIANT         = "duck"
 DEPTH           = 10
-NUM_WORKERS     = 10
-POSITIONS       = 20
+NUM_WORKERS     = 100
+POSITIONS       = 50
 RANDOM_PLIES    = 20
 SEED            = 42
 
@@ -77,7 +77,7 @@ def vanilla_best_move(variant, fen, engine_path, depth):
             process.terminate()
 
 
-def distributed_best_move(variant, fen, engine_path, depth):
+def distributed_best_move(variant, fen, engine_path, depth, m, f, e):
     possible_moves = pyffish.legal_moves(variant, fen, [])
 
     tasks = []
@@ -99,17 +99,18 @@ def distributed_best_move(variant, fen, engine_path, depth):
     results = []
 
     for move, fen in tasks:
-        task = vine.PythonTask(evaluate_fen_worker, variant, fen, "./stockfish", 4)
+        task = vine.PythonTask(evaluate_fen_worker, variant, fen, "./stockfish", depth)
         task.add_input(f, "./stockfish")
+        task.add_input(e, "engine.py")
         task.set_cores(1)
-        task.id = move
+        task.move = move
         m.submit(task)
 
     while not m.empty():
         task = m.wait(5)
         if task:
             score = task.output
-            move = task.id
+            move = task.move
             results.append((move, -score))
 
     results.sort(key=lambda x: x[1], reverse=True)
@@ -141,12 +142,13 @@ def run_benchmark():
     print(f"Listening on port {m.port}")
 
     workers = vine.Factory("condor", m)
-    workers.max_workers = num_workers
+    workers.max_workers = NUM_WORKERS
     workers.cores = 1
     workers.memory = 1000
     workers.disk = 1000
 
     f = m.declare_file("./stockfish")
+    e = m.declare_file("engine.py")
 
     positions = generate_positions(POSITIONS, RANDOM_PLIES, SEED)
 
@@ -168,7 +170,7 @@ def run_benchmark():
             print(f"  Vanilla:  move={v_move:<15}  score={v_score:>7}  time={v_time:.3f}s")
 
             t0 = time.perf_counter()
-            ranked = distributed_best_move(VARIANT, fen, ENGINE_PATH, DEPTH, NUM_WORKERS)
+            ranked = distributed_best_move(VARIANT, fen, ENGINE_PATH, DEPTH, m, f, e)
             d_time = time.perf_counter() - t0
             distributed_times.append(d_time)
 
