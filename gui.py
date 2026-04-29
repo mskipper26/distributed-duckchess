@@ -2,17 +2,18 @@ import chess
 import chess.svg
 import pyffish
 import os
-from PyQt6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
+from PyQt6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem, QApplication
 from PyQt6.QtGui import QPixmap, QPainter
 from PyQt6.QtCore import Qt, QRectF
 from PyQt6.QtSvg import QSvgRenderer
+import sys
 
 from rules import is_duck_legal, is_fowled, check_kings_alive
 
 os.environ["QT_QPA_PLATFORM"] = "xcb"
 
 class DuckGUI(QMainWindow):
-    def __init__(self):
+    def __init__(self, replay=False):
         """Sets everything up"""
         super().__init__()
         self.setWindowTitle("ND CRC Duck Chess")
@@ -46,6 +47,9 @@ class DuckGUI(QMainWindow):
         self.board_renderer = QSvgRenderer()
         self.view.drawBackground = self.draw_background
         self.render_all()
+        self.replay = replay
+        if replay == True:
+            self.init_replay()
 
     def draw_background(self, painter, rect):
         """Draws the chessboard SVG."""
@@ -135,6 +139,8 @@ class DuckGUI(QMainWindow):
 
     def mousePressEvent(self, event):
         """Determines which square was clicked"""
+        if self.replay == True:
+            return
         scene_pos = self.view.mapToScene(event.pos())
         
         total_size = 600
@@ -265,3 +271,69 @@ class DuckGUI(QMainWindow):
         self.engine_thread = EngineWorker(self.engine_path, self.pyffish_fen)
         self.engine_thread.move_calculated.connect(self.apply_engine_move)
         self.engine_thread.start()
+
+    def init_replay(self, filename="moves.csv"):
+        if os.path.exists(filename):
+            with open(filename, 'r') as f:
+                content = f.read().strip()
+                # Split by spaces/newlines and filter empty strings
+                self.replay_moves = [m for m in content.split() if m]
+                self.replay_index = 0
+                print(f"Loaded {len(self.replay_moves)} moves for replay.")
+        else:
+            self.replay_moves = []
+            print("No moves.csv found.")
+
+    def next_replay_move(self):
+        """Advances the board by one move from the CSV"""
+        if self.replay_index >= len(self.replay_moves):
+            print("End of game.")
+            return
+
+        move_str = self.replay_moves[self.replay_index]
+        self.replay_index += 1
+        
+        try:
+            # 1. Handle Piece Move (First 4 chars)
+            piece_uci = move_str[:4]
+            move = chess.Move.from_uci(piece_uci)
+        
+            duck_part = move_str[4:]
+
+            # 2. Handle Duck Part (Clean symbols like @ or ,)
+            duck_uci = duck_part.replace("@", "").replace(",", "")
+            # Duck moves are usually 2 chars at the end like 'g5'
+            if len(duck_uci) >= 2:
+                self.duck_square = chess.parse_square(duck_uci[-2:])
+
+            # 3. Update the boards
+            self.board.push(move)
+            # Update pyffish FEN if you still need it for rules.py checks
+            # Note: you might need to adjust the format here to match what your pyffish expects
+            self.pyffish_fen = pyffish.get_fen("duck", self.pyffish_fen, [move_str])
+            
+            print(f"Replayed: {move_str}")
+            self.render_all()
+
+        except Exception as e:
+            print(f"Error parsing move {move_str}: {e}")
+
+    # Add a keyPressEvent to navigate with spacebar or arrows
+    def keyPressEvent(self, event):
+        if self.replay == False:
+            return
+        if event.key() == Qt.Key.Key_Space or event.key() == Qt.Key.Key_Right:
+            self.next_replay_move()
+        elif event.key() == Qt.Key.Key_R:
+            # Reset game
+            self.board = chess.Board()
+            self.pyffish_fen = pyffish.start_fen("duck")
+            self.replay_index = 0
+            self.duck_square = None
+            self.render_all()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    gui = DuckGUI(replay=True)
+    gui.show()
+    sys.exit(app.exec())
