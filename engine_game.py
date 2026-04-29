@@ -41,7 +41,7 @@ def play_engine_game():
             
             if active_color == "White":
                 # --- DISTRIBUTED ENGINE TURN ---
-                results = distributed_best_move(VARIANT, current_fen, DEPTH m, f_engine, f_module)
+                results = distributed_best_move(VARIANT, current_fen, ENGINE_PATH, DEPTH, m, f_engine, f_module)
                 if not results:
                     print("Distributed engine failed to return moves!")
                     break
@@ -65,7 +65,7 @@ def play_engine_game():
                 print(f"Final Move: {best_move} (King Captured)")
                 game_over = True
             
-            print(f"Move: {best_move} | Score: {score} | Time: {elapsed:.2f}s")
+            print(f"Move: {best_move} | Score: {-score} | Time: {elapsed:.2f}s")
             
             current_fen = next_fen
             move_history.append(best_move)
